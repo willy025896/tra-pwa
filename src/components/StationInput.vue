@@ -12,12 +12,17 @@ const query = ref('')
 const root = ref<HTMLElement | null>(null)
 const searchInput = ref<HTMLInputElement | null>(null)
 
+const VARIANT_MAP: Record<string, string> = { 臺: '台' }
+function normalize(s: string) {
+  return s.toLowerCase().replace(/[臺]/g, (c) => VARIANT_MAP[c] ?? c)
+}
+
 const filtered = computed(() => {
-  const q = query.value.trim().toLowerCase()
+  const q = normalize(query.value.trim())
   if (!q) return store.stations
   return store.stations.filter(
     (s) =>
-      s.StationName.Zh_tw.includes(q) ||
+      normalize(s.StationName.Zh_tw).includes(q) ||
       s.StationName.En.toLowerCase().includes(q) ||
       s.StationID.includes(q),
   )
