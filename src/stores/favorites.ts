@@ -85,18 +85,24 @@ export const useFavoritesStore = defineStore('favorites', () => {
   }
 
   // 登入後把 localStorage 的資料同步到 Supabase
+  // 全部 insert 成功才清掉本地資料，避免任一筆失敗導致使用者收藏遺失
   async function syncAfterLogin() {
     const local = loadFromLS()
     if (local.length === 0 || !authStore.user) return
-    for (const r of local) {
-      await supabase.from('favorite_routes').insert({
-        user_id: authStore.user.id,
+    const userId = authStore.user.id
+    const { error } = await supabase.from('favorite_routes').insert(
+      local.map((r) => ({
+        user_id: userId,
         from_id: r.fromId,
         from_name: r.fromName,
         to_id: r.toId,
         to_name: r.toName,
         label: r.label
-      })
+      }))
+    )
+    if (error) {
+      console.error('[favorites] syncAfterLogin failed, keeping local copy:', error)
+      return
     }
     localStorage.removeItem(LS_KEY)
     await load()
