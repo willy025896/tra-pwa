@@ -7,11 +7,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 npm run dev          # Vite dev server
 npm run build        # runs type-check + vite build in parallel
-npm run type-check   # vue-tsc --build (no separate lint/test scripts exist)
+npm run type-check   # vue-tsc --build
 npm run preview      # preview built bundle
+npm test             # vitest run (one-shot)
+npm run test:watch   # vitest in watch mode
 ```
 
-No test runner, linter, or formatter is configured. CI surface is just `type-check` + `build`.
+No linter or formatter is configured. CI surface is `type-check` + `build` + `test`.
 
 ## Environment
 
@@ -41,7 +43,7 @@ All TDX calls go through one module that owns:
 - **Logged out** → `localStorage` key `tra_favorites`
 - **Logged in** → Supabase `favorite_routes` table
 
-`syncAfterLogin()` migrates any local entries to Supabase then clears `localStorage`. The auth store is responsible for calling it at the right moment after a successful OAuth callback.
+`syncAfterLogin()` migrates local entries to Supabase via a **single batched insert**, then clears `localStorage` only if the insert succeeded — if it fails, the local copy is preserved so the user doesn't lose favorites. The auth store is responsible for calling it at the right moment after a successful OAuth callback.
 
 ### Stations cache ([src/stores/stations.ts](src/stores/stations.ts))
 
@@ -68,3 +70,11 @@ Line icons are centralized in [src/components/Icon.vue](src/components/Icon.vue)
 ### PWA
 
 Configured in [vite.config.ts](vite.config.ts) with `registerType: 'autoUpdate'` — clients pick up new builds without prompt. Manifest is portrait standalone.
+
+## Testing
+
+Vitest is configured in [vite.config.ts](vite.config.ts) with `environment: 'node'`, picking up `src/**/*.test.ts`. Currently only [src/lib/tdx.ts](src/lib/tdx.ts) has tests — the file owns all the high-risk logic (token cache, envelope unwrap, OData filter composition, station timetable flatten, sunset header dedup, URL composition).
+
+When adding a new TDX endpoint to `ENDPOINTS`, add at least one URL-composition assertion in [src/lib/tdx.test.ts](src/lib/tdx.test.ts) to catch path typos.
+
+See [docs/testing.md](docs/testing.md) for the full rationale: what to test, what not to, and the design decisions behind the existing suite (module reset between tests, fake timers for the 60s safety margin, mocking strategy).
