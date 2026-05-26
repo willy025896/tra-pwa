@@ -5,6 +5,7 @@ import { useFavoritesStore } from '@/stores/favorites'
 import { useAuthStore } from '@/stores/auth'
 import { useStationsStore } from '@/stores/stations'
 import StationInput from '@/components/StationInput.vue'
+import Icon from '@/components/Icon.vue'
 import type { Station } from '@/lib/tdx'
 import type { FavoriteRoute } from '@/types'
 import dayjs from 'dayjs'
@@ -64,7 +65,7 @@ function swap() {
     <header class="header">
       <div class="header-inner">
         <div class="logo">
-          <span class="logo-icon">🚂</span>
+          <Icon name="train" :size="20" />
           <span class="logo-text">台鐵快查</span>
         </div>
         <button v-if="!authStore.isLoggedIn" class="login-btn" @click="authStore.loginWithGoogle">
@@ -83,13 +84,16 @@ function swap() {
         <div class="section-header">
           <h2>常用路線</h2>
           <button class="add-btn" @click="addingNew = !addingNew">
-            {{ addingNew ? '取消' : '＋ 新增' }}
+            <Icon :name="addingNew ? 'x' : 'plus'" :size="14" />
+            {{ addingNew ? '取消' : '新增' }}
           </button>
         </div>
 
         <div v-if="addingNew" class="add-form">
           <StationInput v-model="fromStation" placeholder="出發站" />
-          <button class="swap-btn" @click="swap">⇅</button>
+          <button class="swap-btn" @click="swap" aria-label="對調">
+            <Icon name="swap" :size="18" />
+          </button>
           <StationInput v-model="toStation" placeholder="到達站" />
           <input v-model="newLabel" class="label-input" placeholder="備註名稱（選填）" />
           <button class="confirm-btn" :disabled="!fromStation || !toStation" @click="addFavorite">
@@ -98,9 +102,9 @@ function swap() {
         </div>
 
         <div v-if="favStore.routes.length === 0 && !addingNew" class="empty-state">
-          <span class="empty-icon">🛤️</span>
+          <Icon name="route" :size="32" />
           <p>還沒有常用路線</p>
-          <p class="sub">點右上角「＋ 新增」加入</p>
+          <p class="sub">點右上角「新增」加入</p>
         </div>
 
         <div class="route-list">
@@ -114,13 +118,18 @@ function swap() {
               <span v-if="route.label" class="route-label">{{ route.label }}</span>
               <div class="route-stations">
                 <span class="station-name">{{ route.fromName }}</span>
-                <span class="arrow">→</span>
+                <Icon name="arrow-right" :size="16" class="arrow" />
                 <span class="station-name">{{ route.toName }}</span>
               </div>
             </div>
             <div class="route-actions">
-              <button class="query-btn">查詢</button>
-              <button class="delete-btn" @click.stop="favStore.remove(route.id)">✕</button>
+              <button
+                class="delete-btn"
+                aria-label="刪除"
+                @click.stop="favStore.remove(route.id)"
+              >
+                <Icon name="trash" :size="16" />
+              </button>
             </div>
           </div>
         </div>
@@ -128,15 +137,15 @@ function swap() {
 
       <div class="quick-nav">
         <router-link to="/timetable" class="quick-card">
-          <span class="quick-icon">🕐</span>
+          <Icon name="clock" :size="22" />
           <span>時刻查詢</span>
         </router-link>
         <router-link to="/live" class="quick-card">
-          <span class="quick-icon">📡</span>
+          <Icon name="activity" :size="22" />
           <span>即時動態</span>
         </router-link>
         <router-link to="/fare" class="quick-card">
-          <span class="quick-icon">💰</span>
+          <Icon name="wallet" :size="22" />
           <span>票價查詢</span>
         </router-link>
       </div>
@@ -146,42 +155,152 @@ function swap() {
 
 <style scoped>
 .home { min-height: 100dvh; padding-bottom: 80px; }
-.header { position: sticky; top: 0; background: var(--bg); border-bottom: 1.5px solid var(--border); z-index: 40; padding: 0 16px; }
-.header-inner { max-width: 480px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 56px; }
-.logo { display: flex; align-items: center; gap: 8px; }
-.logo-icon { font-size: 1.4rem; }
-.logo-text { font-size: 1.15rem; font-weight: 800; color: var(--text); letter-spacing: -0.02em; }
-.login-btn { background: var(--accent); color: #000; border: none; border-radius: 20px; padding: 6px 14px; font-size: 0.85rem; font-weight: 700; cursor: pointer; font-family: inherit; }
-.user-chip { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--text); }
-.avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
-.logout-btn { background: none; border: 1px solid var(--border); color: var(--text-dim); border-radius: 10px; padding: 2px 8px; font-size: 0.75rem; cursor: pointer; font-family: inherit; }
-.content { max-width: 480px; margin: 0 auto; padding: 20px 16px; display: flex; flex-direction: column; gap: 24px; }
-.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-h2 { font-size: 1.1rem; font-weight: 800; color: var(--text); letter-spacing: -0.02em; }
-.add-btn { background: var(--surface); border: 1.5px solid var(--border); color: var(--accent); border-radius: 20px; padding: 5px 12px; font-size: 0.82rem; font-weight: 700; cursor: pointer; font-family: inherit; }
-.add-form { display: flex; flex-direction: column; gap: 10px; background: var(--surface); border: 1.5px solid var(--border); border-radius: 16px; padding: 16px; margin-bottom: 14px; }
-.swap-btn { align-self: center; background: var(--surface-hover); border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 1.1rem; cursor: pointer; color: var(--text); }
-.label-input { background: var(--surface); border: 2px solid var(--border); border-radius: 12px; padding: 12px; font-size: 0.95rem; color: var(--text); font-family: inherit; outline: none; }
-.label-input::placeholder { color: var(--text-dim); }
-.label-input:focus { border-color: var(--accent); }
-.confirm-btn { background: var(--accent); color: #000; border: none; border-radius: 12px; padding: 12px; font-size: 0.95rem; font-weight: 700; cursor: pointer; font-family: inherit; }
-.confirm-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.empty-state { text-align: center; padding: 40px 20px; color: var(--text-dim); }
-.empty-icon { font-size: 2.5rem; display: block; margin-bottom: 10px; }
-.sub { font-size: 0.85rem; margin-top: 4px; }
-.route-list { display: flex; flex-direction: column; gap: 10px; }
-.route-card { display: flex; align-items: center; justify-content: space-between; background: var(--surface); border: 1.5px solid var(--border); border-radius: 14px; padding: 14px 16px; cursor: pointer; transition: border-color 0.2s, transform 0.15s; }
-.route-card:hover { border-color: var(--accent); transform: translateY(-1px); }
-.route-info { display: flex; flex-direction: column; gap: 4px; }
-.route-label { font-size: 0.75rem; color: var(--accent); font-weight: 700; }
+.header {
+  position: sticky; top: 0;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  z-index: 40;
+  padding: 0 16px;
+}
+.header-inner {
+  max-width: 480px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 56px;
+}
+.logo { display: flex; align-items: center; gap: 8px; color: var(--text); }
+.logo-text { font-size: 1rem; font-weight: 600; letter-spacing: -0.01em; }
+.login-btn {
+  background: var(--text); color: #fff;
+  border: none; border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 0.82rem; font-weight: 500;
+  cursor: pointer;
+}
+.login-btn:hover { opacity: 0.9; }
+.user-chip { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text); }
+.avatar { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; }
+.logout-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+.logout-btn:hover { border-color: var(--border-strong); color: var(--text); }
+
+.content { max-width: 480px; margin: 0 auto; padding: 20px 16px; display: flex; flex-direction: column; gap: 28px; }
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+h2 { font-size: 0.95rem; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
+
+.add-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 0.8rem; font-weight: 500;
+  cursor: pointer;
+}
+.add-btn:hover { border-color: var(--border-strong); background: var(--surface-hover); }
+
+.add-form {
+  display: flex; flex-direction: column; gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+.swap-btn {
+  align-self: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  width: 34px; height: 34px;
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  color: var(--text-dim);
+}
+.swap-btn:hover { color: var(--text); border-color: var(--border-strong); }
+
+.label-input {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.92rem;
+  color: var(--text);
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.label-input::placeholder { color: var(--text-muted); }
+.label-input:focus { border-color: var(--text); }
+
+.confirm-btn {
+  background: var(--text); color: #fff;
+  border: none; border-radius: 8px;
+  padding: 11px;
+  font-size: 0.92rem; font-weight: 500;
+  cursor: pointer;
+}
+.confirm-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.confirm-btn:not(:disabled):hover { opacity: 0.9; }
+
+.empty-state {
+  text-align: center; padding: 40px 20px;
+  color: var(--text-muted);
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+.empty-state p { font-size: 0.9rem; }
+.sub { font-size: 0.8rem; color: var(--text-muted); }
+
+.route-list { display: flex; flex-direction: column; gap: 8px; }
+.route-card {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.route-card:hover { border-color: var(--border-strong); background: var(--surface-soft); }
+.route-info { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.route-label {
+  font-size: 0.7rem; color: var(--text-dim);
+  font-weight: 500; letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
 .route-stations { display: flex; align-items: center; gap: 8px; }
-.station-name { font-size: 1rem; font-weight: 700; color: var(--text); }
-.arrow { color: var(--text-dim); }
-.route-actions { display: flex; align-items: center; gap: 8px; }
-.query-btn { background: var(--accent); color: #000; border: none; border-radius: 8px; padding: 6px 12px; font-size: 0.82rem; font-weight: 700; cursor: pointer; font-family: inherit; }
-.delete-btn { background: none; border: 1px solid var(--border); color: var(--text-dim); border-radius: 8px; width: 30px; height: 30px; cursor: pointer; font-size: 0.75rem; }
-.quick-nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-.quick-card { display: flex; flex-direction: column; align-items: center; gap: 8px; background: var(--surface); border: 1.5px solid var(--border); border-radius: 14px; padding: 18px 10px; text-decoration: none; color: var(--text); font-size: 0.85rem; font-weight: 600; transition: border-color 0.2s, transform 0.15s; }
-.quick-card:hover { border-color: var(--accent); transform: translateY(-2px); }
-.quick-icon { font-size: 1.6rem; }
+.station-name { font-size: 0.95rem; font-weight: 600; color: var(--text); }
+.arrow { color: var(--text-muted); }
+
+.route-actions { display: flex; align-items: center; gap: 4px; }
+.delete-btn {
+  background: none; border: none;
+  color: var(--text-muted);
+  width: 32px; height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.delete-btn:hover { background: var(--danger-soft); color: var(--danger); }
+
+.quick-nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.quick-card {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 10px;
+  text-decoration: none;
+  color: var(--text);
+  font-size: 0.82rem; font-weight: 500;
+  transition: border-color 0.15s, background 0.15s;
+}
+.quick-card:hover { border-color: var(--border-strong); background: var(--surface-soft); }
 </style>

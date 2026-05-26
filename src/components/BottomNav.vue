@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
+import Icon from '@/components/Icon.vue'
+
 const route = useRoute()
 
 const tabs = [
-  { path: '/', icon: '⭐', label: '常用' },
-  { path: '/timetable', icon: '🕐', label: '時刻' },
-  { path: '/live', icon: '📡', label: '動態' },
-  { path: '/fare', icon: '💰', label: '票價' }
-]
+  { path: '/', icon: 'star', label: '常用' },
+  { path: '/timetable', icon: 'clock', label: '時刻' },
+  { path: '/live', icon: 'activity', label: '動態' },
+  { path: '/fare', icon: 'wallet', label: '票價' }
+] as const
 </script>
 
 <template>
@@ -19,7 +21,7 @@ const tabs = [
       class="tab"
       :class="{ active: route.path === tab.path }"
     >
-      <span class="tab-icon">{{ tab.icon }}</span>
+      <Icon :name="tab.icon" :size="22" />
       <span class="tab-label">{{ tab.label }}</span>
     </router-link>
   </nav>
@@ -30,9 +32,9 @@ const tabs = [
   position: fixed;
   bottom: 0; left: 0; right: 0;
   display: flex;
-  background: var(--surface-elevated);
-  border-top: 1.5px solid var(--border);
-  padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  padding: 6px 0 max(6px, env(safe-area-inset-bottom));
   z-index: 50;
 }
 .tab {
@@ -42,11 +44,10 @@ const tabs = [
   align-items: center;
   gap: 3px;
   text-decoration: none;
-  color: var(--text-dim);
-  transition: color 0.2s;
-  padding: 4px 0;
+  color: var(--text-muted);
+  transition: color 0.15s;
+  padding: 6px 0;
 }
-.tab.active { color: var(--accent); }
-.tab-icon { font-size: 1.4rem; }
-.tab-label { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.03em; }
+.tab.active { color: var(--text); }
+.tab-label { font-size: 0.7rem; font-weight: 500; letter-spacing: 0.02em; }
 </style>

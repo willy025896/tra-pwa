@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useStationsStore } from '@/stores/stations'
 import StationInput from '@/components/StationInput.vue'
+import Icon from '@/components/Icon.vue'
 import { tdx } from '@/lib/tdx'
 import type { Station, TrainTime } from '@/lib/tdx'
 import dayjs from 'dayjs'
@@ -87,8 +88,13 @@ function getDuration(t: TrainTime) {
       <div class="search-form">
         <StationInput v-model="fromStation" placeholder="出發站" />
         <div class="middle-row">
-          <button class="swap-btn" @click="swap">⇅</button>
-          <input type="date" v-model="date" class="date-input" />
+          <button class="swap-btn" @click="swap" aria-label="對調">
+            <Icon name="swap" :size="16" />
+          </button>
+          <div class="date-wrap">
+            <Icon name="calendar" :size="16" class="date-icon" />
+            <input type="date" v-model="date" class="date-input" />
+          </div>
         </div>
         <StationInput v-model="toStation" placeholder="到達站" />
         <button class="search-btn" @click="search" :disabled="!fromStation || !toStation || loading">
@@ -103,7 +109,7 @@ function getDuration(t: TrainTime) {
       </div>
 
       <div v-else-if="searched && trains.length === 0 && !error" class="empty">
-        <span>🔍</span>
+        <Icon name="inbox" :size="32" />
         <p>找不到班次</p>
       </div>
 
@@ -117,7 +123,7 @@ function getDuration(t: TrainTime) {
             </div>
             <div class="duration-block">
               <span class="duration">{{ getDuration(t) }}</span>
-              <span class="duration-line">──────</span>
+              <span class="duration-line"></span>
             </div>
             <div class="time-block right">
               <span class="time">{{ destStop(t)?.ArrivalTime }}</span>
@@ -133,31 +139,130 @@ function getDuration(t: TrainTime) {
 
 <style scoped>
 .page { min-height: 100dvh; padding-bottom: 80px; }
-.page-header { padding: 16px 16px 0; max-width: 480px; margin: 0 auto; }
-h1 { font-size: 1.3rem; font-weight: 800; color: var(--text); letter-spacing: -0.03em; margin: 0 0 16px; }
+.page-header { padding: 18px 16px 0; max-width: 480px; margin: 0 auto; }
+h1 { font-size: 1.15rem; font-weight: 600; color: var(--text); letter-spacing: -0.01em; margin: 0 0 16px; }
 .content { max-width: 480px; margin: 0 auto; padding: 0 16px 20px; display: flex; flex-direction: column; gap: 16px; }
-.search-form { background: var(--surface); border: 1.5px solid var(--border); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.search-form {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex; flex-direction: column; gap: 10px;
+}
 .middle-row { display: flex; gap: 10px; align-items: center; }
-.swap-btn { background: var(--surface-hover); border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 1.1rem; cursor: pointer; color: var(--text); flex-shrink: 0; }
-.date-input { flex: 1; background: var(--surface); border: 2px solid var(--border); border-radius: 12px; padding: 10px 12px; font-size: 0.95rem; color: var(--text); font-family: inherit; outline: none; }
-.date-input:focus { border-color: var(--accent); }
-.search-btn { background: var(--accent); color: #000; border: none; border-radius: 12px; padding: 13px; font-size: 1rem; font-weight: 700; cursor: pointer; font-family: inherit; transition: opacity 0.2s; }
-.search-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.error-msg { background: #ff4d6d22; border: 1.5px solid #ff4d6d55; border-radius: 12px; padding: 12px 16px; color: #ff4d6d; font-size: 0.9rem; }
-.train-list { display: flex; flex-direction: column; gap: 10px; }
-.train-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 14px; padding: 14px 16px; }
-.train-type-badge { display: inline-block; background: var(--accent); color: #000; border-radius: 6px; padding: 2px 8px; font-size: 0.75rem; font-weight: 800; margin-bottom: 10px; }
+.swap-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  width: 36px; height: 36px;
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+.swap-btn:hover { color: var(--text); border-color: var(--border-strong); }
+.date-wrap {
+  flex: 1;
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  transition: border-color 0.15s;
+}
+.date-wrap:focus-within { border-color: var(--text); }
+.date-icon { color: var(--text-muted); }
+.date-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  font-size: 0.92rem;
+  color: var(--text);
+  font-family: inherit;
+  outline: none;
+}
+.search-btn {
+  background: var(--text); color: #fff;
+  border: none; border-radius: 8px;
+  padding: 12px;
+  font-size: 0.95rem; font-weight: 500;
+  cursor: pointer;
+}
+.search-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.search-btn:not(:disabled):hover { opacity: 0.9; }
+
+.error-msg {
+  background: var(--danger-soft);
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: var(--danger);
+  font-size: 0.88rem;
+}
+
+.train-list { display: flex; flex-direction: column; gap: 8px; }
+.train-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  transition: border-color 0.15s;
+}
+.train-card:hover { border-color: var(--border-strong); }
+.train-type-badge {
+  display: inline-block;
+  background: var(--surface-hover);
+  color: var(--text);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  margin-bottom: 12px;
+}
 .times { display: flex; align-items: center; justify-content: space-between; }
-.time-block { display: flex; flex-direction: column; gap: 2px; }
+.time-block { display: flex; flex-direction: column; gap: 3px; }
 .time-block.right { align-items: flex-end; }
-.time { font-size: 1.3rem; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
-.station { font-size: 0.78rem; color: var(--text-dim); }
-.duration-block { display: flex; flex-direction: column; align-items: center; gap: 2px; color: var(--text-dim); }
-.duration { font-size: 0.75rem; font-weight: 600; }
-.duration-line { font-size: 0.6rem; letter-spacing: -2px; }
-.train-no { font-size: 0.75rem; color: var(--text-dim); margin-top: 10px; border-top: 1px solid var(--border); padding-top: 8px; }
-.skeleton-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 14px; height: 100px; animation: pulse 1.5s infinite; }
+.time {
+  font-size: 1.25rem; font-weight: 600; color: var(--text);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.station { font-size: 0.76rem; color: var(--text-dim); }
+
+.duration-block {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  color: var(--text-muted);
+  flex: 1;
+  padding: 0 12px;
+}
+.duration { font-size: 0.72rem; font-weight: 500; }
+.duration-line {
+  width: 100%;
+  height: 1px;
+  background: var(--border);
+}
+
+.train-no {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+}
+.skeleton-card {
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  height: 100px;
+  animation: pulse 1.5s infinite;
+}
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-.empty { text-align: center; padding: 40px; color: var(--text-dim); font-size: 0.95rem; }
-.empty span { font-size: 2rem; display: block; margin-bottom: 8px; }
+.empty {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+}
 </style>
