@@ -1,26 +1,22 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useThemeStore } from '@/stores/theme'
-import Icon from '@/components/Icon.vue'
+import { useThemeStore, type ThemeMode } from '@/stores/theme'
+import Icon, { type IconName } from '@/components/Icon.vue'
 
 const themeStore = useThemeStore()
 
-const iconName = computed(() => {
-  if (themeStore.mode === 'light') return 'sun'
-  if (themeStore.mode === 'dark') return 'moon'
-  return 'monitor'
-})
+const THEME_META: Record<ThemeMode, { icon: IconName; nextLabel: string }> = {
+  light:  { icon: 'sun',     nextLabel: '切換為深色模式' },
+  dark:   { icon: 'moon',    nextLabel: '切換為跟隨系統' },
+  system: { icon: 'monitor', nextLabel: '切換為亮色模式' }
+}
 
-const nextLabel = computed(() => {
-  if (themeStore.mode === 'light') return '切換為深色模式'
-  if (themeStore.mode === 'dark') return '切換為跟隨系統'
-  return '切換為亮色模式'
-})
+const meta = computed(() => THEME_META[themeStore.mode])
 </script>
 
 <template>
-  <button class="toggle" @click="themeStore.toggle()" :title="nextLabel" :aria-label="nextLabel">
-    <Icon :name="iconName" :size="18" />
+  <button class="toggle" @click="themeStore.toggle()" :title="meta.nextLabel" :aria-label="meta.nextLabel">
+    <Icon :name="meta.icon" :size="18" />
   </button>
 </template>
 

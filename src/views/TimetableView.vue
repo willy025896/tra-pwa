@@ -191,15 +191,6 @@ h1 { font-size: 1.15rem; font-weight: 600; color: var(--text); letter-spacing: -
 .search-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 .search-btn:not(:disabled):hover { opacity: 0.9; }
 
-.error-msg {
-  background: var(--danger-soft);
-  border: 1px solid #fecaca;
-  border-radius: 8px;
-  padding: 10px 14px;
-  color: var(--danger);
-  font-size: 0.88rem;
-}
-
 .train-list { display: flex; flex-direction: column; gap: 8px; }
 .train-card {
   background: var(--surface);
@@ -257,7 +248,6 @@ h1 { font-size: 1.15rem; font-weight: 600; color: var(--text); letter-spacing: -
   height: 100px;
   animation: pulse 1.5s infinite;
 }
-@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 .empty {
   text-align: center;
   padding: 40px;

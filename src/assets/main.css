@@ -71,3 +71,14 @@ button { font-family: inherit; }
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
+
+.error-msg {
+  background: var(--danger-soft);
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: var(--danger);
+  font-size: 0.88rem;
+}
+
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }

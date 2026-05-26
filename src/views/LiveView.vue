@@ -1,8 +1,14 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useStationsStore } from '@/stores/stations'
 import StationInput from '@/components/StationInput.vue'
-import { tdx, TRAIN_STATION_STATUS_NAME, DIRECTION_NAME } from '@/lib/tdx'
+import {
+  tdx,
+  TRAIN_STATION_STATUS,
+  TRAIN_STATION_STATUS_NAME,
+  DIRECTION,
+  DIRECTION_NAME
+} from '@/lib/tdx'
 import type { Station, LiveTrain, StationTimetableEntry } from '@/lib/tdx'
 
 const stationsStore = useStationsStore()
@@ -12,6 +18,31 @@ const scheduleMap = ref<Map<string, StationTimetableEntry>>(new Map())
 const loading = ref(false)
 const error = ref('')
 let timer: ReturnType<typeof setInterval> | null = null
+
+const STATUS_CLASS: Record<number, string> = {
+  [TRAIN_STATION_STATUS.APPROACHING]: 'approaching',
+  [TRAIN_STATION_STATUS.AT_STATION]:  'at-station',
+  [TRAIN_STATION_STATUS.PASSING]:     'passing'
+}
+
+const displayTrains = computed(() =>
+  trains.value.map(t => {
+    const sched = scheduleMap.value.get(t.TrainNo)
+    return {
+      train: t,
+      sched,
+      directionLabel: sched ? DIRECTION_NAME[sched.Direction] ?? '' : '',
+      isNorthbound: sched?.Direction === DIRECTION.NORTHBOUND,
+      schedTime: trimSec(sched?.ArrivalTime) || trimSec(sched?.DepartureTime),
+      statusLabel: t.TrainStationStatus !== undefined
+        ? TRAIN_STATION_STATUS_NAME[t.TrainStationStatus] ?? ''
+        : '',
+      statusClass: t.TrainStationStatus !== undefined
+        ? STATUS_CLASS[t.TrainStationStatus] ?? 'departed'
+        : 'departed'
+    }
+  })
+)
 
 onMounted(() => stationsStore.load())
 onUnmounted(() => { if (timer) clearInterval(timer) })
@@ -58,27 +89,6 @@ function delayLabel(min: number) {
   return `誤點 ${min} 分`
 }
 
-function statusLabel(s: number | undefined) {
-  if (s === undefined) return ''
-  return TRAIN_STATION_STATUS_NAME[s] ?? ''
-}
-
-function statusClass(s: number | undefined) {
-  if (s === 0) return 'approaching'
-  if (s === 1) return 'at-station'
-  if (s === 4) return 'passing'
-  return 'departed'
-}
-
-function scheduleOf(trainNo: string) {
-  return scheduleMap.value.get(trainNo)
-}
-
-function directionLabel(d: number | undefined) {
-  if (d === undefined) return ''
-  return DIRECTION_NAME[d] ?? ''
-}
-
 function trimSec(t: string | undefined) {
   if (!t) return ''
   return t.length >= 5 ? t.slice(0, 5) : t
@@ -106,37 +116,35 @@ function trimSec(t: string | undefined) {
         <div v-for="i in 6" :key="i" class="skeleton-card" />
       </div>
 
-      <div v-else-if="trains.length > 0" class="train-list">
-        <div v-for="t in trains" :key="t.TrainNo" class="train-card">
+      <div v-else-if="displayTrains.length > 0" class="train-list">
+        <div v-for="d in displayTrains" :key="d.train.TrainNo" class="train-card">
           <div class="left">
             <div class="row-top">
-              <span class="train-type">{{ t.TrainTypeName.Zh_tw }}</span>
+              <span class="train-type">{{ d.train.TrainTypeName.Zh_tw }}</span>
               <span
-                v-if="directionLabel(scheduleOf(t.TrainNo)?.Direction)"
-                :class="['dir-chip', scheduleOf(t.TrainNo)?.Direction === 1 ? 'up' : 'down']"
+                v-if="d.directionLabel"
+                :class="['dir-chip', d.isNorthbound ? 'up' : 'down']"
               >
-                {{ directionLabel(scheduleOf(t.TrainNo)?.Direction) }}
+                {{ d.directionLabel }}
               </span>
-              <span class="train-no">{{ t.TrainNo }}</span>
+              <span class="train-no">{{ d.train.TrainNo }}</span>
             </div>
-            <div v-if="scheduleOf(t.TrainNo)" class="row-meta">
-              <span v-if="scheduleOf(t.TrainNo)?.DestinationStationName">
-                往 {{ scheduleOf(t.TrainNo)!.DestinationStationName!.Zh_tw }}
+            <div v-if="d.sched" class="row-meta">
+              <span v-if="d.sched.DestinationStationName">
+                往 {{ d.sched.DestinationStationName.Zh_tw }}
               </span>
-              <span class="sched-time">
-                預計 {{ trimSec(scheduleOf(t.TrainNo)?.ArrivalTime) || trimSec(scheduleOf(t.TrainNo)?.DepartureTime) }}
-              </span>
+              <span class="sched-time">預計 {{ d.schedTime }}</span>
             </div>
           </div>
           <div class="right">
             <span
-              v-if="statusLabel(t.TrainStationStatus)"
-              :class="['status-chip', statusClass(t.TrainStationStatus)]"
+              v-if="d.statusLabel"
+              :class="['status-chip', d.statusClass]"
             >
-              {{ statusLabel(t.TrainStationStatus) }}
+              {{ d.statusLabel }}
             </span>
-            <span :class="['delay-badge', delayColor(t.DelayTime)]">
-              {{ delayLabel(t.DelayTime) }}
+            <span :class="['delay-badge', delayColor(d.train.DelayTime)]">
+              {{ delayLabel(d.train.DelayTime) }}
             </span>
           </div>
         </div>
@@ -167,15 +175,6 @@ h1 { font-size: 1.15rem; font-weight: 600; color: var(--text); letter-spacing: -
 .search-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 .search-btn:not(:disabled):hover { opacity: 0.9; }
 .refresh-hint { text-align: center; font-size: 0.76rem; color: var(--text-muted); margin: 0; }
-
-.error-msg {
-  background: var(--danger-soft);
-  border: 1px solid #fecaca;
-  border-radius: 8px;
-  padding: 10px 14px;
-  color: var(--danger);
-  font-size: 0.88rem;
-}
 
 .train-list { display: flex; flex-direction: column; gap: 6px; }
 .train-card {
@@ -236,5 +235,4 @@ h1 { font-size: 1.15rem; font-weight: 600; color: var(--text); letter-spacing: -
   height: 60px;
   animation: pulse 1.5s infinite;
 }
-@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 </style>

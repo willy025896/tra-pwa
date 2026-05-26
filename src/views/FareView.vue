@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useStationsStore } from '@/stores/stations'
 import StationInput from '@/components/StationInput.vue'
 import Icon from '@/components/Icon.vue'
-import { tdx, TRAIN_TYPE_NAME, FARE_CLASS_NAME } from '@/lib/tdx'
+import { tdx, TRAIN_TYPE_NAME, FARE_CLASS_NAME, FARE_CLASS } from '@/lib/tdx'
 import type { Station, ODFare } from '@/lib/tdx'
 
 const stationsStore = useStationsStore()
@@ -38,6 +38,7 @@ function swap() {
   fromStation.value = toStation.value
   toStation.value = tmp
   fares.value = []
+  searched.value = false
 }
 
 function trainTypeName(code: number) {
@@ -49,7 +50,7 @@ function fareClassName(code: number) {
 }
 
 function fullFarePrice(f: ODFare): number | null {
-  return f.Fares.find(x => x.FareClass === 1)?.Price ?? null
+  return f.Fares.find(x => x.FareClass === FARE_CLASS.FULL)?.Price ?? null
 }
 </script>
 
@@ -149,15 +150,6 @@ h1 { font-size: 1.15rem; font-weight: 600; color: var(--text); letter-spacing: -
 .search-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 .search-btn:not(:disabled):hover { opacity: 0.9; }
 
-.error-msg {
-  background: var(--danger-soft);
-  border: 1px solid #fecaca;
-  border-radius: 8px;
-  padding: 10px 14px;
-  color: var(--danger);
-  font-size: 0.88rem;
-}
-
 .route-header {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -207,7 +199,6 @@ h1 { font-size: 1.15rem; font-weight: 600; color: var(--text); letter-spacing: -
   height: 200px;
   animation: pulse 1.5s infinite;
 }
-@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 .empty {
   text-align: center; padding: 40px;
   color: var(--text-muted);

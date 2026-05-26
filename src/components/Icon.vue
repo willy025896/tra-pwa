@@ -1,5 +1,5 @@
-<script setup lang="ts">
-type IconName =
+<script lang="ts">
+export type IconName =
   | 'star'
   | 'clock'
   | 'activity'
@@ -20,7 +20,9 @@ type IconName =
   | 'sun'
   | 'moon'
   | 'monitor'
+</script>
 
+<script setup lang="ts">
 defineProps<{ name: IconName; size?: number | string }>()
 </script>
 

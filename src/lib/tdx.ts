@@ -105,17 +105,30 @@ export interface LiveTrain {
   UpdateTime: string
 }
 
+export const TRAIN_STATION_STATUS = {
+  APPROACHING: 0,
+  AT_STATION: 1,
+  LEAVING: 2,
+  PASSED: 3,
+  PASSING: 4
+} as const
+
 export const TRAIN_STATION_STATUS_NAME: Record<number, string> = {
-  0: '進站中',
-  1: '在站上',
-  2: '已離站',
-  3: '已過站',
-  4: '通過'
+  [TRAIN_STATION_STATUS.APPROACHING]: '進站中',
+  [TRAIN_STATION_STATUS.AT_STATION]:  '在站上',
+  [TRAIN_STATION_STATUS.LEAVING]:     '已離站',
+  [TRAIN_STATION_STATUS.PASSED]:      '已過站',
+  [TRAIN_STATION_STATUS.PASSING]:     '通過'
 }
 
+export const DIRECTION = {
+  SOUTHBOUND: 0,
+  NORTHBOUND: 1
+} as const
+
 export const DIRECTION_NAME: Record<number, string> = {
-  0: '南下',
-  1: '北上'
+  [DIRECTION.SOUTHBOUND]: '南下',
+  [DIRECTION.NORTHBOUND]: '北上'
 }
 
 export interface StationTimetableEntry {
@@ -170,14 +183,24 @@ export const TRAIN_TYPE_NAME: Record<number, string> = {
   11: '新自強 (EMU3000)'
 }
 
+export const FARE_CLASS = {
+  FULL: 1,
+  ROUND_TRIP: 2,
+  CHILD: 3,
+  SENIOR: 4,
+  DISABILITY: 5,
+  COMPANION: 6,
+  GROUP: 7
+} as const
+
 export const FARE_CLASS_NAME: Record<number, string> = {
-  1: '全票',
-  2: '來回票',
-  3: '孩童票',
-  4: '敬老票',
-  5: '愛心票',
-  6: '愛心陪伴票',
-  7: '團體票'
+  [FARE_CLASS.FULL]:       '全票',
+  [FARE_CLASS.ROUND_TRIP]: '來回票',
+  [FARE_CLASS.CHILD]:      '孩童票',
+  [FARE_CLASS.SENIOR]:     '敬老票',
+  [FARE_CLASS.DISABILITY]: '愛心票',
+  [FARE_CLASS.COMPANION]:  '愛心陪伴票',
+  [FARE_CLASS.GROUP]:      '團體票'
 }
 
 export const tdx = {
