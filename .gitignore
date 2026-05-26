@@ -44,6 +44,9 @@ __screenshots__/
 .env.production
 .env.test
 
+# Claude Code local settings
+.claude/settings.local.json
+
 # PWA generated files
 public/sw.js
 public/sw.js.map
