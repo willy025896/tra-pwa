@@ -17,6 +17,9 @@ type IconName =
   | 'route'
   | 'ticket'
   | 'inbox'
+  | 'sun'
+  | 'moon'
+  | 'monitor'
 
 defineProps<{ name: IconName; size?: number | string }>()
 </script>
@@ -111,6 +114,25 @@ defineProps<{ name: IconName; size?: number | string }>()
     <template v-else-if="name === 'inbox'">
       <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
       <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11Z" />
+    </template>
+    <template v-else-if="name === 'sun'">
+      <circle cx="12" cy="12" r="4" />
+      <line x1="12" y1="2" x2="12" y2="4" />
+      <line x1="12" y1="20" x2="12" y2="22" />
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+      <line x1="2" y1="12" x2="4" y2="12" />
+      <line x1="20" y1="12" x2="22" y2="12" />
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+    </template>
+    <template v-else-if="name === 'moon'">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+    </template>
+    <template v-else-if="name === 'monitor'">
+      <rect x="2" y="3" width="20" height="14" rx="2" />
+      <line x1="8" y1="21" x2="16" y2="21" />
+      <line x1="12" y1="17" x2="12" y2="21" />
     </template>
   </svg>
 </template>

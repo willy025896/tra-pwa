@@ -158,7 +158,7 @@ h1 { font-size: 1.15rem; font-weight: 600; color: var(--text); letter-spacing: -
   display: flex; flex-direction: column; gap: 10px;
 }
 .search-btn {
-  background: var(--text); color: #fff;
+  background: var(--text); color: var(--bg);
   border: none; border-radius: 8px;
   padding: 12px;
   font-size: 0.95rem; font-weight: 500;
@@ -215,10 +215,10 @@ h1 { font-size: 1.15rem; font-weight: 600; color: var(--text); letter-spacing: -
   font-size: 0.7rem; font-weight: 500;
   border: 1px solid;
 }
-.status-chip.approaching { color: var(--info); border-color: #bfdbfe; background: var(--info-soft); }
-.status-chip.at-station { color: #7c3aed; border-color: #ddd6fe; background: #f5f3ff; }
+.status-chip.approaching { color: var(--info); border-color: var(--info-soft); background: var(--info-soft); }
+.status-chip.at-station { color: var(--purple); border-color: var(--purple-soft); background: var(--purple-soft); }
 .status-chip.departed { color: var(--text-dim); border-color: var(--border); background: var(--surface-soft); }
-.status-chip.passing { color: #db2777; border-color: #fbcfe8; background: #fdf2f8; }
+.status-chip.passing { color: var(--pink); border-color: var(--pink-soft); background: var(--pink-soft); }
 
 .delay-badge {
   padding: 3px 10px; border-radius: 999px;

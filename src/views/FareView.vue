@@ -140,7 +140,7 @@ h1 { font-size: 1.15rem; font-weight: 600; color: var(--text); letter-spacing: -
 .swap-btn:hover { color: var(--text); border-color: var(--border-strong); }
 
 .search-btn {
-  background: var(--text); color: #fff;
+  background: var(--text); color: var(--bg);
   border: none; border-radius: 8px;
   padding: 12px;
   font-size: 0.95rem; font-weight: 500;

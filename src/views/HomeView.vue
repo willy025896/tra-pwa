@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useStationsStore } from '@/stores/stations'
 import StationInput from '@/components/StationInput.vue'
 import Icon from '@/components/Icon.vue'
+import ThemeToggle from '@/components/ThemeToggle.vue'
 import type { Station } from '@/lib/tdx'
 import type { FavoriteRoute } from '@/types'
 import dayjs from 'dayjs'
@@ -68,13 +69,16 @@ function swap() {
           <Icon name="train" :size="20" />
           <span class="logo-text">台鐵快查</span>
         </div>
-        <button v-if="!authStore.isLoggedIn" class="login-btn" @click="authStore.loginWithGoogle">
-          Google 登入
-        </button>
-        <div v-else class="user-chip">
-          <img v-if="authStore.user?.avatarUrl" :src="authStore.user.avatarUrl" class="avatar" />
-          <span>{{ authStore.user?.name?.split(' ')[0] }}</span>
-          <button class="logout-btn" @click="authStore.logout">登出</button>
+        <div class="header-actions">
+          <ThemeToggle />
+          <button v-if="!authStore.isLoggedIn" class="login-btn" @click="authStore.loginWithGoogle">
+            Google 登入
+          </button>
+          <div v-else class="user-chip">
+            <img v-if="authStore.user?.avatarUrl" :src="authStore.user.avatarUrl" class="avatar" />
+            <span>{{ authStore.user?.name?.split(' ')[0] }}</span>
+            <button class="logout-btn" @click="authStore.logout">登出</button>
+          </div>
         </div>
       </div>
     </header>
@@ -169,8 +173,9 @@ function swap() {
 }
 .logo { display: flex; align-items: center; gap: 8px; color: var(--text); }
 .logo-text { font-size: 1rem; font-weight: 600; letter-spacing: -0.01em; }
+.header-actions { display: flex; align-items: center; gap: 8px; }
 .login-btn {
-  background: var(--text); color: #fff;
+  background: var(--text); color: var(--bg);
   border: none; border-radius: 8px;
   padding: 7px 14px;
   font-size: 0.82rem; font-weight: 500;
@@ -241,7 +246,7 @@ h2 { font-size: 0.95rem; font-weight: 600; color: var(--text); letter-spacing: -
 .label-input:focus { border-color: var(--text); }
 
 .confirm-btn {
-  background: var(--text); color: #fff;
+  background: var(--text); color: var(--bg);
   border: none; border-radius: 8px;
   padding: 11px;
   font-size: 0.92rem; font-weight: 500;

@@ -13,8 +13,8 @@ export default defineConfig({
         name: '台鐵快查',
         short_name: '台鐵快查',
         description: '台鐵時刻、動態、票價快速查詢',
-        theme_color: '#0f172a',
-        background_color: '#0f172a',
+        theme_color: '#f4f4f5',
+        background_color: '#f4f4f5',
         display: 'standalone',
         orientation: 'portrait',
         icons: [

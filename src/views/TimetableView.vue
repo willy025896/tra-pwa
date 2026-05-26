@@ -182,7 +182,7 @@ h1 { font-size: 1.15rem; font-weight: 600; color: var(--text); letter-spacing: -
   outline: none;
 }
 .search-btn {
-  background: var(--text); color: #fff;
+  background: var(--text); color: var(--bg);
   border: none; border-radius: 8px;
   padding: 12px;
   font-size: 0.95rem; font-weight: 500;
