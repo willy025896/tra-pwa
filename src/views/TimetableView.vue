@@ -53,9 +53,20 @@ function swap() {
   toStation.value = tmp
 }
 
+function originStop(t: TrainTime) {
+  const fromId = fromStation.value?.StationID
+  return t.StopTimes.find(s => s.StationID === fromId) ?? t.StopTimes[0]
+}
+
+function destStop(t: TrainTime) {
+  const toId = toStation.value?.StationID
+  return t.StopTimes.find(s => s.StationID === toId) ?? t.StopTimes[t.StopTimes.length - 1]
+}
+
 function getDuration(t: TrainTime) {
-  const dep = t.OriginStopTime.DepartureTime
-  const arr = t.DestinationStopTime.ArrivalTime
+  const dep = originStop(t)?.DepartureTime
+  const arr = destStop(t)?.ArrivalTime
+  if (!dep || !arr) return ''
   const depParts = dep.split(':').map(Number)
   const arrParts = arr.split(':').map(Number)
   const dh = depParts[0] ?? 0, dm = depParts[1] ?? 0
@@ -97,11 +108,11 @@ function getDuration(t: TrainTime) {
       </div>
 
       <div v-else class="train-list">
-        <div v-for="t in trains" :key="t.TrainNo" class="train-card">
-          <div class="train-type-badge">{{ t.TrainTypeName.Zh_tw }}</div>
+        <div v-for="t in trains" :key="t.TrainInfo.TrainNo" class="train-card">
+          <div class="train-type-badge">{{ t.TrainInfo.TrainTypeName.Zh_tw }}</div>
           <div class="times">
             <div class="time-block">
-              <span class="time">{{ t.OriginStopTime.DepartureTime }}</span>
+              <span class="time">{{ originStop(t)?.DepartureTime }}</span>
               <span class="station">{{ fromStation?.StationName.Zh_tw }}</span>
             </div>
             <div class="duration-block">
@@ -109,11 +120,11 @@ function getDuration(t: TrainTime) {
               <span class="duration-line">──────</span>
             </div>
             <div class="time-block right">
-              <span class="time">{{ t.DestinationStopTime.ArrivalTime }}</span>
+              <span class="time">{{ destStop(t)?.ArrivalTime }}</span>
               <span class="station">{{ toStation?.StationName.Zh_tw }}</span>
             </div>
           </div>
-          <div class="train-no">車次 {{ t.TrainNo }}</div>
+          <div class="train-no">車次 {{ t.TrainInfo.TrainNo }}</div>
         </div>
       </div>
     </div>
