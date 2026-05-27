@@ -111,7 +111,7 @@ describe('tdx', () => {
       await tdx.getStations()
       await tdx.getStations()
 
-      const postCalls = fetchMock.mock.calls.filter(([, init]: [unknown, RequestInit?]) => init?.method === 'POST')
+      const postCalls = fetchMock.mock.calls.filter((c) => c[1]?.method === 'POST')
       expect(postCalls).toHaveLength(1)
     })
 
@@ -126,7 +126,7 @@ describe('tdx', () => {
       vi.advanceTimersByTime(39_000) // 39s < (100 - 60)
       await tdx.getStations()
 
-      const postCalls = fetchMock.mock.calls.filter(([, init]: [unknown, RequestInit?]) => init?.method === 'POST')
+      const postCalls = fetchMock.mock.calls.filter((c) => c[1]?.method === 'POST')
       expect(postCalls).toHaveLength(1)
     })
 
@@ -141,7 +141,7 @@ describe('tdx', () => {
       vi.advanceTimersByTime(41_000) // 41s > (100 - 60)
       await tdx.getStations()
 
-      const postCalls = fetchMock.mock.calls.filter(([, init]: [unknown, RequestInit?]) => init?.method === 'POST')
+      const postCalls = fetchMock.mock.calls.filter((c) => c[1]?.method === 'POST')
       expect(postCalls).toHaveLength(2)
     })
 
@@ -154,8 +154,8 @@ describe('tdx', () => {
 
       await tdx.getStations()
 
-      const getCalls = fetchMock.mock.calls.filter(([, init]: [unknown, RequestInit?]) => init?.method !== 'POST')
-      expect(getCalls[0][1]).toMatchObject({
+      const getCalls = fetchMock.mock.calls.filter((c) => c[1]?.method !== 'POST')
+      expect(getCalls[0]![1]).toMatchObject({
         headers: { Authorization: 'Bearer fake-token' }
       })
     })
@@ -191,8 +191,8 @@ describe('tdx', () => {
 
       await tdx.getLiveTrains('1020')
 
-      const getCalls = fetchMock.mock.calls.filter(([, init]: [unknown, RequestInit?]) => init?.method !== 'POST')
-      const url = new URL(getCalls[0][0] as string)
+      const getCalls = fetchMock.mock.calls.filter((c) => c[1]?.method !== 'POST')
+      const url = new URL(getCalls[0]![0] as string)
       expect(Object.fromEntries(url.searchParams)).toMatchObject({
         $top: '200',
         $filter: "StationID eq '1020'",
@@ -209,8 +209,8 @@ describe('tdx', () => {
 
       await tdx.getLiveTrains()
 
-      const getCalls = fetchMock.mock.calls.filter(([, init]: [unknown, RequestInit?]) => init?.method !== 'POST')
-      const url = new URL(getCalls[0][0] as string)
+      const getCalls = fetchMock.mock.calls.filter((c) => c[1]?.method !== 'POST')
+      const url = new URL(getCalls[0]![0] as string)
       const params = Object.fromEntries(url.searchParams)
       expect(params).toEqual({ $top: '200', $format: 'JSON' })
     })
@@ -284,8 +284,8 @@ describe('tdx', () => {
 
       await tdx.getTimeTable('1000', '1020', '2026-05-26')
 
-      const getCalls = fetchMock.mock.calls.filter(([, init]: [unknown, RequestInit?]) => init?.method !== 'POST')
-      const url = new URL(getCalls[0][0] as string)
+      const getCalls = fetchMock.mock.calls.filter((c) => c[1]?.method !== 'POST')
+      const url = new URL(getCalls[0]![0] as string)
       expect(url.origin + url.pathname).toBe(
         'https://tdx.transportdata.tw/api/basic/v3/Rail/TRA/DailyTrainTimetable/OD/1000/to/1020/2026-05-26'
       )
@@ -300,8 +300,8 @@ describe('tdx', () => {
 
       await tdx.getStationTimetable('1020')
 
-      const getCalls = fetchMock.mock.calls.filter(([, init]: [unknown, RequestInit?]) => init?.method !== 'POST')
-      const url = new URL(getCalls[0][0] as string)
+      const getCalls = fetchMock.mock.calls.filter((c) => c[1]?.method !== 'POST')
+      const url = new URL(getCalls[0]![0] as string)
       expect(url.origin + url.pathname).toBe(
         'https://tdx.transportdata.tw/api/basic/v3/Rail/TRA/DailyStationTimetable/Today/Station/1020'
       )
@@ -316,8 +316,8 @@ describe('tdx', () => {
 
       await tdx.getFare('1000', '1020')
 
-      const getCalls = fetchMock.mock.calls.filter(([, init]: [unknown, RequestInit?]) => init?.method !== 'POST')
-      const url = new URL(getCalls[0][0] as string)
+      const getCalls = fetchMock.mock.calls.filter((c) => c[1]?.method !== 'POST')
+      const url = new URL(getCalls[0]![0] as string)
       expect(url.origin + url.pathname).toBe(
         'https://tdx.transportdata.tw/api/basic/v3/Rail/TRA/ODFare/1000/to/1020'
       )
@@ -332,8 +332,8 @@ describe('tdx', () => {
 
       await tdx.getStations()
 
-      const getCalls = fetchMock.mock.calls.filter(([, init]: [unknown, RequestInit?]) => init?.method !== 'POST')
-      const url = new URL(getCalls[0][0] as string)
+      const getCalls = fetchMock.mock.calls.filter((c) => c[1]?.method !== 'POST')
+      const url = new URL(getCalls[0]![0] as string)
       expect(url.searchParams.get('$format')).toBe('JSON')
     })
   })
