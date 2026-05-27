@@ -23,7 +23,7 @@
 | PWA | vite-plugin-pwa（Service Worker、Web App Manifest） |
 | 後端 / 認證 | Supabase（Google OAuth 登入、常用路線儲存） |
 | 資料來源 | TDX 台鐵 v3 API（OAuth2 client credentials 取 token） |
-| HTTP | axios |
+| HTTP | native fetch |
 | 日期處理 | Day.js |
 
 ## 專案結構

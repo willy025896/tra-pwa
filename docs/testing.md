@@ -42,7 +42,7 @@
 任何人若把 `expires_in - 60` 改成 `expires_in`、或把 `Date.now() < _tokenExpiry` 寫錯方向，都會出現「以為還沒過期但 TDX 已拒絕」之類的細微 bug。
 
 **測試案例**：
-- 連呼三次 `getStations` → `axios.post` 只被呼叫 1 次
+- 連呼三次 `getStations` → token 的 `fetch` POST 只被呼叫 1 次
 - `expires_in: 100`，前進 39 秒 → 仍只 1 次（39 < 100 - 60）
 - `expires_in: 100`，前進 41 秒 → 變 2 次（41 > 100 - 60）
 - 確認 `Authorization: Bearer <token>` header 有正確送出
@@ -125,7 +125,7 @@
 
 選 (2)：測試更接近真實使用情境，也不污染模組介面。
 
-### 3.6 為什麼用 `vi.mock('axios')` 而不是真的打網路
+### 3.6 為什麼用 `vi.stubGlobal('fetch', vi.fn())` 而不是真的打網路
 
 - 不依賴外部服務 → 測試穩定、快速、可離線跑
 - 不消耗 TDX 的 client credentials 配額

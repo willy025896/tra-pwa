@@ -1,5 +1,3 @@
-import axios from 'axios'
-
 const TDX_BASE = 'https://tdx.transportdata.tw/api/basic'
 const CLIENT_ID = import.meta.env.VITE_TDX_CLIENT_ID as string
 const CLIENT_SECRET = import.meta.env.VITE_TDX_CLIENT_SECRET as string
@@ -20,17 +18,22 @@ let _tokenExpiry = 0
 
 async function getToken(): Promise<string> {
   if (_token && Date.now() < _tokenExpiry) return _token
-  const res = await axios.post(
+  const res = await fetch(
     'https://tdx.transportdata.tw/auth/realms/TDXConnect/protocol/openid-connect/token',
-    new URLSearchParams({
-      grant_type: 'client_credentials',
-      client_id: CLIENT_ID,
-      client_secret: CLIENT_SECRET
-    }),
-    { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'client_credentials',
+        client_id: CLIENT_ID,
+        client_secret: CLIENT_SECRET
+      })
+    }
   )
-  _token = res.data.access_token
-  _tokenExpiry = Date.now() + (res.data.expires_in - 60) * 1000
+  if (!res.ok) throw new Error(`TDX auth error: ${res.status}`)
+  const data = await res.json()
+  _token = data.access_token
+  _tokenExpiry = Date.now() + (data.expires_in - 60) * 1000
   return _token
 }
 
@@ -41,17 +44,20 @@ async function tdxGet<T>(
 ): Promise<T> {
   const token = await getToken()
   const { version, path } = ENDPOINTS[key]
-  const url = `${TDX_BASE}/${version}${path}${suffix}`
-  const res = await axios.get(url, {
-    headers: { Authorization: `Bearer ${token}` },
-    params: { ...params, $format: 'JSON' }
+  const qs = new URLSearchParams(
+    Object.entries({ ...params, $format: 'JSON' }).map(([k, v]) => [k, String(v)])
+  )
+  const url = `${TDX_BASE}/${version}${path}${suffix}?${qs}`
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` }
   })
-  const sunset = res.headers['sunset'] || res.headers['deprecation']
+  if (!res.ok) throw new Error(`TDX error: ${res.status}`)
+  const sunset = res.headers.get('sunset') || res.headers.get('deprecation')
   if (sunset && !warnedSunset.has(key)) {
     warnedSunset.add(key)
     console.warn(`[TDX] endpoint "${key}" (${version}) is deprecated: ${sunset}`)
   }
-  return res.data
+  return res.json()
 }
 
 function unwrap<T>(key: EndpointKey, data: Record<string, unknown>): T[] {
