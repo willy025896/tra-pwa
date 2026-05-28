@@ -1,9 +1,14 @@
+/// <reference types="vitest/config" />
 import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  test: {
+    environment: 'node',
+    include: ['src/**/*.test.ts']
+  },
   plugins: [
     vue(),
     VitePWA({
@@ -13,8 +18,8 @@ export default defineConfig({
         name: '台鐵快查',
         short_name: '台鐵快查',
         description: '台鐵時刻、動態、票價快速查詢',
-        theme_color: '#0f172a',
-        background_color: '#0f172a',
+        theme_color: '#f4f4f5',
+        background_color: '#f4f4f5',
         display: 'standalone',
         orientation: 'portrait',
         icons: [

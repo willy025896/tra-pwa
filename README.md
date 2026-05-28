@@ -1,42 +1,39 @@
-# tra-pwa
+# 台鐵快查 (tra-pwa)
 
-This template should help get you started developing with Vue 3 in Vite.
+一款台鐵時刻、即時動態與票價的行動優先查詢 PWA。資料來源為交通部 [TDX 運輸資料流通服務](https://tdx.transportdata.tw/) 的台鐵 v3 API，介面以手機單欄佈局與深色主題設計，可安裝至桌面離線使用。
 
-## Recommended IDE Setup
+## 功能
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+- **常用路線**：將出發站與到達站組合儲存為常用路線（可加備註名稱），首頁一鍵帶入時刻查詢。
+  - 未登入時存於瀏覽器 `localStorage`；以 Google 帳號登入後改存 Supabase，並會把本機已存的路線同步上雲，達成跨裝置共用。
+- **時刻查詢**：選擇起訖站與日期，查詢當日 OD 直達班次，顯示車種、發車／到達時間與行駛時間，可一鍵交換起訖站。
+- **即時動態**：選擇車站查看列車即時看板，呈現誤點分鐘數、進站／在站／離站／通過狀態與方向（南下／北上），並結合當日站別時刻表顯示目的地與預計時間，每 30 秒自動更新。
+- **票價查詢**：查詢起訖站之間各車種的票價，含全票、來回票、孩童、敬老、愛心等票種分類。
+- **車站搜尋**：可篩選的車站下拉選單，搜尋時自動匹配「臺／台」異體字。
+- **PWA**：可安裝至主畫面、獨立視窗執行，採 `autoUpdate` 自動更新；車站清單於 `localStorage` 快取 7 天以降低 API 請求。
 
-## Recommended Browser Setup
+## 使用技術
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+| 類別 | 技術 |
+| --- | --- |
+| 前端框架 | Vue 3（`<script setup>` Composition API）+ TypeScript |
+| 建置工具 | Vite |
+| 路由 | Vue Router（懶載入路由、依路由更新文件標題） |
+| 狀態管理 | Pinia |
+| PWA | vite-plugin-pwa（Service Worker、Web App Manifest） |
+| 後端 / 認證 | Supabase（Google OAuth 登入、常用路線儲存） |
+| 資料來源 | TDX 台鐵 v3 API（OAuth2 client credentials 取 token） |
+| HTTP | native fetch |
+| 日期處理 | Day.js |
 
-## Type Support for `.vue` Imports in TS
+## 專案結構
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vite.dev/config/).
-
-## Project Setup
-
-```sh
-npm install
 ```
-
-### Compile and Hot-Reload for Development
-
-```sh
-npm run dev
-```
-
-### Type-Check, Compile and Minify for Production
-
-```sh
-npm run build
+src/
+├── views/        # 四個主要頁面：首頁、時刻、動態、票價
+├── components/   # BottomNav 底部導航、StationInput 車站選擇
+├── stores/       # Pinia：auth 認證、favorites 常用路線、stations 車站清單
+├── lib/          # tdx TDX API 封裝、supabase 客戶端
+├── router/       # 路由設定
+└── types/        # 共用型別
 ```
