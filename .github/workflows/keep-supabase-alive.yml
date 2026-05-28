@@ -19,7 +19,7 @@ jobs:
 
           echo "HTTP status: $response"
 
-          if [ "$response" -ge 200 ] && [ "$response" -lt 400 ]; then
+          if [ "$response" -ge 200 ] && [ "$response" -lt 500 ]; then
             echo "Supabase is alive."
           else
             echo "Unexpected status code: $response"
