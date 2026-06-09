@@ -53,6 +53,12 @@ Station list (~240 entries) is cached in `localStorage` (`tra-pwa:stations`) wit
 
 Live train board (`getLiveTrains`) only carries delay + status. To show destination, direction, and scheduled time, it's joined with `getStationTimetable` (today's station timetable) via a `Map<TrainNo, StationTimetableEntry>`. The timetable call is wrapped in `.catch` so live data still renders if the timetable endpoint fails. Auto-refreshes every 30s via `setInterval`; cleanup in `onUnmounted`.
 
+### TimetableView: client-side sort + departure-time filter ([src/views/TimetableView.vue](src/views/TimetableView.vue))
+
+`getTimeTable` (OD daily timetable) returns trains in TDX's default TrainNo order. The `displayTrains` computed re-sorts by the origin station's actual `DepartureTime` (it decorates each train with its departure minute once, then filters and sorts; trains with no matching stop — `NaN` — sort last, stably). The optional departure-time window is a **pure client-side filter** over the already-fetched day, so adjusting it never re-hits the API and updates instantly.
+
+Time inputs are plain text (not `<input type="time">`, whose 12/24h display follows OS locale) forced to 24-hour. They use a **"rightmost two digits = minutes"** convention (`formatTimeInput` for live formatting, `normalizeTime` for blur) so partial entries are unambiguous: `123` → `01:23`, `1230` → `12:30`, `830` → `08:30`. Out-of-range parts clamp to `23` / `59`.
+
 ### Station search variant matching ([src/components/StationInput.vue](src/components/StationInput.vue))
 
 Search input normalizes `臺` → `台` so users typing either variant find both. If you add more legacy/simplified pairs, extend `VARIANT_MAP` and `normalize()`.
