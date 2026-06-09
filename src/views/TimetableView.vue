@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useStationsStore } from '@/stores/stations'
 import StationInput from '@/components/StationInput.vue'
@@ -14,6 +14,8 @@ const stationsStore = useStationsStore()
 const fromStation = ref<Station | null>(null)
 const toStation = ref<Station | null>(null)
 const date = ref(dayjs().format('YYYY-MM-DD'))
+const startTime = ref('')
+const endTime = ref('')
 const trains = ref<TrainTime[]>([])
 const loading = ref(false)
 const error = ref('')
@@ -64,18 +66,80 @@ function destStop(t: TrainTime) {
   return t.StopTimes.find(s => s.StationID === toId) ?? t.StopTimes[t.StopTimes.length - 1]
 }
 
+// 將 "HH:mm" 或 "HH:mm:ss" 轉成當日分鐘數；無值回傳 NaN
+function toMinutes(t?: string): number {
+  if (!t) return NaN
+  const [h, m] = t.split(':').map(Number)
+  return (h ?? 0) * 60 + (m ?? 0)
+}
+
+// 打字即時格式化：只留數字、最多 4 位，採「右兩位＝分鐘」於倒數第 2 位前補冒號
+// 123 → 1:23、1230 → 12:30、830 → 8:30（消除部分輸入的歧義）
+function formatTimeInput(raw: string): string {
+  const digits = raw.replace(/\D/g, '').slice(0, 4)
+  if (digits.length <= 2) return digits
+  // 滿 4 位即定型並夾限，避免停留在 23:99、9:99 之類的非法顯示
+  if (digits.length === 4) return normalizeTime(digits)
+  return `${digits.slice(0, -2)}:${digits.slice(-2)}`
+}
+
+// 失焦時正規化成合法 24 小時制 HH:mm：右兩位＝分、其餘＝時，超界各自夾到 23 / 59
+function normalizeTime(v: string): string {
+  const digits = v.replace(/\D/g, '')
+  if (!digits) return ''
+  const h = Math.min(23, Number(digits.slice(0, -2) || '0'))
+  const m = Math.min(59, Number(digits.slice(-2)))
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+}
+
+function onTimeInput(which: 'start' | 'end', e: Event) {
+  const formatted = formatTimeInput((e.target as HTMLInputElement).value)
+  if (which === 'start') startTime.value = formatted
+  else endTime.value = formatted
+}
+
+function onTimeBlur(which: 'start' | 'end') {
+  if (which === 'start') startTime.value = normalizeTime(startTime.value)
+  else endTime.value = normalizeTime(endTime.value)
+}
+
 function getDuration(t: TrainTime) {
-  const dep = originStop(t)?.DepartureTime
-  const arr = destStop(t)?.ArrivalTime
-  if (!dep || !arr) return ''
-  const depParts = dep.split(':').map(Number)
-  const arrParts = arr.split(':').map(Number)
-  const dh = depParts[0] ?? 0, dm = depParts[1] ?? 0
-  const ah = arrParts[0] ?? 0, am = arrParts[1] ?? 0
-  const mins = (ah * 60 + am) - (dh * 60 + dm)
+  const dep = toMinutes(originStop(t)?.DepartureTime)
+  const arr = toMinutes(destStop(t)?.ArrivalTime)
+  if (Number.isNaN(dep) || Number.isNaN(arr)) return ''
+  const mins = arr - dep
   if (mins < 60) return `${mins}分`
   return `${Math.floor(mins / 60)}時${mins % 60}分`
 }
+
+// 依出發站發車時間排序，並套用起訖時間範圍篩選（純前端，即時生效）
+// 先一次算好各班的發車分鐘數，避免 filter 與 sort 重複呼叫 originStop
+const displayTrains = computed(() => {
+  const start = toMinutes(startTime.value)
+  const end = toMinutes(endTime.value)
+  return trains.value
+    .map(t => ({ t, dep: toMinutes(originStop(t)?.DepartureTime) }))
+    .filter(({ dep }) => {
+      if (Number.isNaN(dep)) return true
+      if (!Number.isNaN(start) && dep < start) return false
+      if (!Number.isNaN(end) && dep > end) return false
+      return true
+    })
+    .sort((a, b) => {
+      // 無發車時間（NaN）的班次穩定地排到最後，避免 NaN 比較造成順序不定
+      if (Number.isNaN(a.dep)) return Number.isNaN(b.dep) ? 0 : 1
+      if (Number.isNaN(b.dep)) return -1
+      return a.dep - b.dep
+    })
+    .map(({ t }) => t)
+})
+
+// 起始時間晚於結束時間（範圍顛倒）時，用來給出更明確的空狀態提示
+const invalidTimeRange = computed(() => {
+  const start = toMinutes(startTime.value)
+  const end = toMinutes(endTime.value)
+  return !Number.isNaN(start) && !Number.isNaN(end) && start > end
+})
 </script>
 
 <template>
@@ -96,6 +160,40 @@ function getDuration(t: TrainTime) {
             <input type="date" v-model="date" class="date-input" />
           </div>
         </div>
+        <div class="time-range">
+          <Icon name="clock" :size="16" class="date-icon" />
+          <input
+            :value="startTime"
+            @input="onTimeInput('start', $event)"
+            @blur="onTimeBlur('start')"
+            type="text"
+            inputmode="numeric"
+            maxlength="5"
+            placeholder="00:00"
+            class="time-input"
+            aria-label="最早出發時間"
+          />
+          <span class="time-sep">~</span>
+          <input
+            :value="endTime"
+            @input="onTimeInput('end', $event)"
+            @blur="onTimeBlur('end')"
+            type="text"
+            inputmode="numeric"
+            maxlength="5"
+            placeholder="23:59"
+            class="time-input"
+            aria-label="最晚出發時間"
+          />
+          <button
+            v-if="startTime || endTime"
+            class="time-clear"
+            @click="startTime = ''; endTime = ''"
+            aria-label="清除時間範圍"
+          >
+            <Icon name="x" :size="14" />
+          </button>
+        </div>
         <StationInput v-model="toStation" placeholder="到達站" />
         <button class="search-btn" @click="search" :disabled="!fromStation || !toStation || loading">
           {{ loading ? '查詢中...' : '查詢時刻' }}
@@ -113,8 +211,13 @@ function getDuration(t: TrainTime) {
         <p>找不到班次</p>
       </div>
 
+      <div v-else-if="searched && displayTrains.length === 0 && !error" class="empty">
+        <Icon name="inbox" :size="32" />
+        <p>{{ invalidTimeRange ? '起始時間晚於結束時間' : '此時間範圍沒有班次' }}</p>
+      </div>
+
       <div v-else class="train-list">
-        <div v-for="t in trains" :key="t.TrainInfo.TrainNo" class="train-card">
+        <div v-for="t in displayTrains" :key="t.TrainInfo.TrainNo" class="train-card">
           <div class="train-type-badge">{{ t.TrainInfo.TrainTypeName.Zh_tw }}</div>
           <div class="times">
             <div class="time-block">
@@ -181,6 +284,38 @@ h1 { font-size: 1.15rem; font-weight: 600; color: var(--text); letter-spacing: -
   font-family: inherit;
   outline: none;
 }
+.time-range {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  transition: border-color 0.15s;
+}
+.time-range:focus-within { border-color: var(--text); }
+.time-input {
+  background: transparent;
+  border: none;
+  font-size: 0.92rem;
+  color: var(--text);
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+  outline: none;
+  flex: 1;
+  min-width: 0;
+}
+.time-sep { color: var(--text-muted); font-size: 0.92rem; }
+.time-clear {
+  background: transparent;
+  border: none;
+  padding: 2px;
+  display: inline-flex;
+  cursor: pointer;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.time-clear:hover { color: var(--text); }
+
 .search-btn {
   background: var(--text); color: var(--bg);
   border: none; border-radius: 8px;
