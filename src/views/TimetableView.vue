@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useStationsStore } from '@/stores/stations'
 import StationInput from '@/components/StationInput.vue'
+import TimeInput from '@/components/TimeInput.vue'
 import Icon from '@/components/Icon.vue'
 import { tdx } from '@/lib/tdx'
 import type { Station, TrainTime } from '@/lib/tdx'
@@ -66,41 +67,33 @@ function destStop(t: TrainTime) {
   return t.StopTimes.find(s => s.StationID === toId) ?? t.StopTimes[t.StopTimes.length - 1]
 }
 
+// 常用時段快捷：一鍵帶入起訖；再點同一顆則清除（手機點選免叫鍵盤）
+const TIME_PRESETS = [
+  { label: '清晨', start: '05:00', end: '08:00' },
+  { label: '早上', start: '08:00', end: '12:00' },
+  { label: '下午', start: '12:00', end: '18:00' },
+  { label: '晚上', start: '18:00', end: '23:59' },
+]
+
+function isPresetActive(p: { start: string; end: string }) {
+  return startTime.value === p.start && endTime.value === p.end
+}
+
+function applyPreset(p: { start: string; end: string }) {
+  if (isPresetActive(p)) {
+    startTime.value = ''
+    endTime.value = ''
+  } else {
+    startTime.value = p.start
+    endTime.value = p.end
+  }
+}
+
 // 將 "HH:mm" 或 "HH:mm:ss" 轉成當日分鐘數；無值回傳 NaN
 function toMinutes(t?: string): number {
   if (!t) return NaN
   const [h, m] = t.split(':').map(Number)
   return (h ?? 0) * 60 + (m ?? 0)
-}
-
-// 打字即時格式化：只留數字、最多 4 位，採「右兩位＝分鐘」於倒數第 2 位前補冒號
-// 123 → 1:23、1230 → 12:30、830 → 8:30（消除部分輸入的歧義）
-function formatTimeInput(raw: string): string {
-  const digits = raw.replace(/\D/g, '').slice(0, 4)
-  if (digits.length <= 2) return digits
-  // 滿 4 位即定型並夾限，避免停留在 23:99、9:99 之類的非法顯示
-  if (digits.length === 4) return normalizeTime(digits)
-  return `${digits.slice(0, -2)}:${digits.slice(-2)}`
-}
-
-// 失焦時正規化成合法 24 小時制 HH:mm：右兩位＝分、其餘＝時，超界各自夾到 23 / 59
-function normalizeTime(v: string): string {
-  const digits = v.replace(/\D/g, '')
-  if (!digits) return ''
-  const h = Math.min(23, Number(digits.slice(0, -2) || '0'))
-  const m = Math.min(59, Number(digits.slice(-2)))
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
-}
-
-function onTimeInput(which: 'start' | 'end', e: Event) {
-  const formatted = formatTimeInput((e.target as HTMLInputElement).value)
-  if (which === 'start') startTime.value = formatted
-  else endTime.value = formatted
-}
-
-function onTimeBlur(which: 'start' | 'end') {
-  if (which === 'start') startTime.value = normalizeTime(startTime.value)
-  else endTime.value = normalizeTime(endTime.value)
 }
 
 function getDuration(t: TrainTime) {
@@ -151,40 +144,19 @@ const invalidTimeRange = computed(() => {
     <div class="content">
       <div class="search-form">
         <StationInput v-model="fromStation" placeholder="出發站" />
-        <div class="middle-row">
-          <button class="swap-btn" @click="swap" aria-label="對調">
-            <Icon name="swap" :size="16" />
-          </button>
-          <div class="date-wrap">
-            <Icon name="calendar" :size="16" class="date-icon" />
-            <input type="date" v-model="date" class="date-input" />
-          </div>
+        <button class="swap-btn" @click="swap" aria-label="對調">
+          <Icon name="swap" :size="16" />
+        </button>
+        <StationInput v-model="toStation" placeholder="到達站" />
+        <div class="date-wrap">
+          <Icon name="calendar" :size="16" class="date-icon" />
+          <input type="date" v-model="date" class="date-input" />
         </div>
         <div class="time-range">
           <Icon name="clock" :size="16" class="date-icon" />
-          <input
-            :value="startTime"
-            @input="onTimeInput('start', $event)"
-            @blur="onTimeBlur('start')"
-            type="text"
-            inputmode="numeric"
-            maxlength="5"
-            placeholder="00:00"
-            class="time-input"
-            aria-label="最早出發時間"
-          />
+          <TimeInput v-model="startTime" placeholder="00:00" aria-label="最早出發時間" />
           <span class="time-sep">~</span>
-          <input
-            :value="endTime"
-            @input="onTimeInput('end', $event)"
-            @blur="onTimeBlur('end')"
-            type="text"
-            inputmode="numeric"
-            maxlength="5"
-            placeholder="23:59"
-            class="time-input"
-            aria-label="最晚出發時間"
-          />
+          <TimeInput v-model="endTime" placeholder="23:59" aria-label="最晚出發時間" />
           <button
             v-if="startTime || endTime"
             class="time-clear"
@@ -194,7 +166,16 @@ const invalidTimeRange = computed(() => {
             <Icon name="x" :size="14" />
           </button>
         </div>
-        <StationInput v-model="toStation" placeholder="到達站" />
+        <div class="time-presets">
+          <button
+            v-for="p in TIME_PRESETS"
+            :key="p.label"
+            type="button"
+            class="preset-chip"
+            :class="{ active: isPresetActive(p) }"
+            @click="applyPreset(p)"
+          >{{ p.label }}</button>
+        </div>
         <button class="search-btn" @click="search" :disabled="!fromStation || !toStation || loading">
           {{ loading ? '查詢中...' : '查詢時刻' }}
         </button>
@@ -252,8 +233,8 @@ h1 { font-size: 1.15rem; font-weight: 600; color: var(--text); letter-spacing: -
   padding: 14px;
   display: flex; flex-direction: column; gap: 10px;
 }
-.middle-row { display: flex; gap: 10px; align-items: center; }
 .swap-btn {
+  align-self: center;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 50%;
@@ -261,11 +242,10 @@ h1 { font-size: 1.15rem; font-weight: 600; color: var(--text); letter-spacing: -
   display: inline-flex; align-items: center; justify-content: center;
   cursor: pointer;
   color: var(--text-dim);
-  flex-shrink: 0;
+  margin: -2px 0;
 }
 .swap-btn:hover { color: var(--text); border-color: var(--border-strong); }
 .date-wrap {
-  flex: 1;
   display: flex; align-items: center; gap: 8px;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -293,17 +273,6 @@ h1 { font-size: 1.15rem; font-weight: 600; color: var(--text); letter-spacing: -
   transition: border-color 0.15s;
 }
 .time-range:focus-within { border-color: var(--text); }
-.time-input {
-  background: transparent;
-  border: none;
-  font-size: 0.92rem;
-  color: var(--text);
-  font-family: inherit;
-  font-variant-numeric: tabular-nums;
-  outline: none;
-  flex: 1;
-  min-width: 0;
-}
 .time-sep { color: var(--text-muted); font-size: 0.92rem; }
 .time-clear {
   background: transparent;
@@ -315,6 +284,27 @@ h1 { font-size: 1.15rem; font-weight: 600; color: var(--text); letter-spacing: -
   flex-shrink: 0;
 }
 .time-clear:hover { color: var(--text); }
+
+.time-presets { display: flex; gap: 8px; }
+.preset-chip {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 4px;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.12s;
+}
+.preset-chip:hover { border-color: var(--border-strong); color: var(--text); }
+.preset-chip.active {
+  background: var(--surface-hover);
+  border-color: var(--text);
+  color: var(--text);
+  font-weight: 600;
+}
 
 .search-btn {
   background: var(--text); color: var(--bg);
