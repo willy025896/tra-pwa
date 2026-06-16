@@ -12,14 +12,21 @@ on:
 jobs:
   ping:
     runs-on: ubuntu-latest
+    timeout-minutes: 5 # backstop：整個 job 卡死（非 curl 層）時自動中止，不佔 runner
     steps:
       - name: Bump service uptime (real DB write keeps Supabase active)
         run: |
           # 用 service_role 呼叫 RPC：這是一次真正打到 Postgres 的寫入，
           # Supabase 才會認定為 DB 活動（先前用 anon 讀有 RLS 的表會被擋成 4xx，
           # HTTP 雖通但 DB 沒被真正用到，所以仍被判定閒置）。
+          #
+          # 逾時與重試（只管「單次執行內的暫時性失敗」；cron 漏跑由 bump_uptime() 補天數，互不重疊）：
+          #   --connect-timeout 15 / --max-time 30：連線與總逾時上限
+          #   --retry 3 --retry-delay 5：只重試暫時性錯誤（連線失敗、逾時、5xx/408/429）；
+          #     不重試 4xx——那是設定/權限錯，重試也沒用，只會白等。
           response=$(curl -s -w "\n%{http_code}" \
-            --retry 3 --retry-delay 5 --retry-all-errors --max-time 30 \
+            --connect-timeout 15 --max-time 30 \
+            --retry 3 --retry-delay 5 \
             -X POST \
             "${{ secrets.SUPABASE_URL }}/rest/v1/rpc/bump_uptime" \
             -H "apikey: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
@@ -33,7 +40,14 @@ jobs:
           echo "HTTP status: $status"
           echo "Response: $body"
 
-          # 這次要求真正成功（2xx），不再把 4xx 當成功來掩蓋問題。
+          # 空回應防護：重試耗盡仍連不上時 status 會是空字串，
+          # 先擋掉，避免 [ "" -ge 200 ] 的整數比較噴 bash 錯。
+          if [ -z "$status" ]; then
+            echo "No response from Supabase (connection failed after retries)."
+            exit 1
+          fi
+
+          # 要求真正成功（2xx），不把 4xx 當成功來掩蓋問題。
           if [ "$status" -ge 200 ] && [ "$status" -lt 300 ]; then
             echo "Uptime bumped. Supabase is alive."
           else
