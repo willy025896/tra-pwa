@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useFavoritesStore } from '@/stores/favorites'
 import { useAuthStore } from '@/stores/auth'
 import { useStationsStore } from '@/stores/stations'
+import { useUptimeStore } from '@/stores/uptime'
 import StationInput from '@/components/StationInput.vue'
 import Icon from '@/components/Icon.vue'
 import ThemeToggle from '@/components/ThemeToggle.vue'
@@ -15,6 +16,7 @@ const router = useRouter()
 const favStore = useFavoritesStore()
 const authStore = useAuthStore()
 const stationsStore = useStationsStore()
+const uptimeStore = useUptimeStore()
 
 const fromStation = ref<Station | null>(null)
 const toStation = ref<Station | null>(null)
@@ -24,6 +26,7 @@ const newLabel = ref('')
 onMounted(async () => {
   await stationsStore.load()
   await favStore.load()
+  uptimeStore.load() // 不 await，footer 晚一點出現也無妨
 })
 
 function goSearch(route: FavoriteRoute) {
@@ -154,6 +157,13 @@ function swap() {
         </router-link>
       </div>
     </main>
+
+    <footer class="site-footer">
+      <span class="logo-text-footer">台鐵快查</span>
+      <span v-if="uptimeStore.days !== null" class="uptime">
+        服務已上線 {{ uptimeStore.days }} 天
+      </span>
+    </footer>
   </div>
 </template>
 
@@ -308,4 +318,13 @@ h2 { font-size: 0.95rem; font-weight: 600; color: var(--text); letter-spacing: -
   transition: border-color 0.15s, background 0.15s;
 }
 .quick-card:hover { border-color: var(--border-strong); background: var(--surface-soft); }
+
+.site-footer {
+  max-width: 480px; margin: 0 auto;
+  padding: 24px 16px 12px;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  text-align: center;
+}
+.logo-text-footer { font-size: 0.8rem; font-weight: 600; color: var(--text-dim); letter-spacing: -0.01em; }
+.uptime { font-size: 0.72rem; color: var(--text-muted); }
 </style>

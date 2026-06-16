@@ -22,7 +22,7 @@ Four required env vars (see [.env.example](.env.example)) — Vite needs all of 
 - `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` — Supabase project
 - `VITE_TDX_CLIENT_ID`, `VITE_TDX_CLIENT_SECRET` — TDX OAuth2 client credentials
 
-Supabase schema lives in [supabase-schema.sql](supabase-schema.sql) — a single `favorite_routes` table with RLS scoped to `auth.uid() = user_id`.
+Supabase schema lives in [supabase-schema.sql](supabase-schema.sql) — `favorite_routes` (RLS scoped to `auth.uid() = user_id`) plus a single-row `service_uptime` counter (see _Keep-alive_ below). The `service_role` key is **never** in `VITE_*` env (it would ship in the client bundle and bypass RLS) — it lives only as a GitHub Actions **repository** secret `SUPABASE_SERVICE_ROLE_KEY`.
 
 Path alias: `@/...` → `src/...` (see [vite.config.ts](vite.config.ts)).
 
@@ -44,6 +44,14 @@ All TDX calls go through one module that owns:
 - **Logged in** → Supabase `favorite_routes` table
 
 `syncAfterLogin()` migrates local entries to Supabase via a **single batched insert**, then clears `localStorage` only if the insert succeeded — if it fails, the local copy is preserved so the user doesn't lose favorites. The auth store is responsible for calling it at the right moment after a successful OAuth callback.
+
+### Supabase keep-alive + uptime counter ([.github/workflows/keep-supabase-alive.yml](.github/workflows/keep-supabase-alive.yml))
+
+Free-tier Supabase pauses a project after 7 days of **real DB inactivity** — HTTP traffic alone doesn't count. The earlier ping did `GET favorite_routes` with the anon key, which RLS rejected (no `auth.uid()`), so it never registered as DB activity (the workflow masked this by accepting 4xx as success). The current design fixes that and doubles as a feature:
+
+- `service_uptime` is a single row (`id=1`, `days`, `last_increment_date`). The `bump_uptime()` SQL function does `days += (current_date - last_increment_date)` then sets `last_increment_date = current_date` — so a **skipped Action run self-heals** (next run back-fills the missed days) and a same-day re-run is idempotent (`+0`). To back-fill from launch, set `last_increment_date` to the launch date once; the next bump catches up.
+- The workflow runs **daily** (was every 3 days — one skipped GitHub cron run could approach the 7-day line) and calls `POST /rest/v1/rpc/bump_uptime` with the **service_role** key (bypasses RLS → a genuine write Supabase counts). Success is now strict 2xx — no more masking 4xx.
+- RLS on `service_uptime`: a `select using (true)` policy lets the frontend read the count; there is **no** insert/update policy, so anon can't mutate it — only the service_role RPC can. [src/stores/uptime.ts](src/stores/uptime.ts) reads `days` once per session and [HomeView](src/views/HomeView.vue)'s footer shows "服務已上線 N 天" (renders only once `days` loads; the read is fire-and-forget so it never blocks the page).
 
 ### Stations cache ([src/stores/stations.ts](src/stores/stations.ts))
 

@@ -2,26 +2,40 @@ name: Keep Supabase Alive
 
 on:
   schedule:
-    # 每 3 天執行一次 (UTC 00:00)，防止免費方案閒置 7 天後被暫停
-    - cron: '0 0 */3 * *'
+    # 每天執行一次 (UTC 00:00)。
+    # GitHub 的 scheduled workflow 偶爾會延遲或整次被跳過，
+    # 但 bump_uptime() 會補上漏掉的天數，所以天數不會少加，
+    # 同時也讓「離 7 天閒置紅線」永遠保有大量緩衝。
+    - cron: '0 0 * * *'
   workflow_dispatch: # 允許手動觸發
 
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Supabase REST API
+      - name: Bump service uptime (real DB write keeps Supabase active)
         run: |
-          response=$(curl -s -o /dev/null -w "%{http_code}" \
-            "${{ secrets.SUPABASE_URL }}/rest/v1/favorite_routes?select=id&limit=1" \
-            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}")
+          # 用 service_role 呼叫 RPC：這是一次真正打到 Postgres 的寫入，
+          # Supabase 才會認定為 DB 活動（先前用 anon 讀有 RLS 的表會被擋成 4xx，
+          # HTTP 雖通但 DB 沒被真正用到，所以仍被判定閒置）。
+          response=$(curl -s -w "\n%{http_code}" \
+            -X POST \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/rpc/bump_uptime" \
+            -H "apikey: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{}')
 
-          echo "HTTP status: $response"
+          body=$(echo "$response" | head -n -1)
+          status=$(echo "$response" | tail -n 1)
 
-          if [ "$response" -ge 200 ] && [ "$response" -lt 500 ]; then
-            echo "Supabase is alive."
+          echo "HTTP status: $status"
+          echo "Response: $body"
+
+          # 這次要求真正成功（2xx），不再把 4xx 當成功來掩蓋問題。
+          if [ "$status" -ge 200 ] && [ "$status" -lt 300 ]; then
+            echo "Uptime bumped. Supabase is alive."
           else
-            echo "Unexpected status code: $response"
+            echo "Failed to bump uptime — Supabase may NOT have registered activity."
             exit 1
           fi
