@@ -15,7 +15,7 @@ export const useUptimeStore = defineStore('uptime', () => {
       .from('service_uptime')
       .select('days')
       .eq('id', 1)
-      .single()
+      .maybeSingle() // 0 列回 null（不像 .single() 會丟 406），footer 單純不顯示
     if (!error && data) days.value = data.days
   }
 
