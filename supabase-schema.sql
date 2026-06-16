@@ -71,3 +71,25 @@ $$;
 -- （即使不收回，anon 因 SECURITY INVOKER + 無 update policy 也改不動，但收回更乾淨。）
 revoke execute on function bump_uptime() from anon, public;
 grant execute on function bump_uptime() to service_role;
+
+-- ---------------------------------------------------------------------------
+-- Supabase linter 加固：rls_auto_enable() event trigger 函式收回對外執行權
+-- ---------------------------------------------------------------------------
+--
+-- public.rls_auto_enable() 是一個綁在 event trigger 上的 SECURITY DEFINER 函式
+-- （在 Supabase 後台建立，非本檔產生）：每當 public schema 有新 table 被 CREATE，
+-- 就自動幫它 enable row level security，是一層「忘記開 RLS」的保險。
+--
+-- 問題：Postgres 預設把新函式的 EXECUTE 權限 grant 給 PUBLIC，導致 anon/authenticated
+-- 能透過 /rest/v1/rpc/rls_auto_enable 看到它，觸發 linter 警告
+-- (0028/0029 *_security_definer_function_executable)。
+--
+-- 收回 EXECUTE 不影響功能：event trigger 函式由 DDL 事件本身觸發，與角色的 EXECUTE
+-- 權限無關；且其 pg_event_trigger_ddl_commands() 只能在 trigger 情境執行，
+-- 直接 RPC 呼叫本來就會報錯。故不改 SECURITY INVOKER（需 DEFINER 高權才能 alter table）、
+-- 也不刪除（自動開 RLS 是有用的加固），只收回對外執行權。
+revoke execute on function public.rls_auto_enable() from public, anon, authenticated;
+
+-- 備註：linter 另有一條 WARN「Leaked Password Protection Disabled」刻意不處理——
+-- 該功能現需 Pro 方案才能開啟，且本專案僅用 Google OAuth、無密碼流程，實質無防護對象。
+-- 升級方案或日後加入 email/password 登入時，再到 Dashboard → Authentication 開啟即可。
